@@ -1,1 +1,0 @@
-# **Companion Website for "Constructing, Validating, and Using Human Reference Atlas Crosswalks"**
