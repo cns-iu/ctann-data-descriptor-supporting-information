@@ -1,11 +1,11 @@
 # Constructing, Validating, and Using Human Reference Atlas Cell Type Annotation Crosswalks
 
-Nicole Vasilevsky1,2*, Aleix Puig-Barbe3*, Andreas Bueckle1, Ellen M. Quardokus1, Yongxin Kong1, Jie Zheng4, Yashvardhan Jain1, Bruce W. Herr II1, Katy Börner1*
+Nicole Vasilevsky<sup>1,2*</sup>, Aleix Puig-Barbe<sup>3*</sup>, Andreas Bueckle<sup>1</sup>, Ellen M. Quardokus<sup>1</sup>, Yongxin Kong<sup>1</sup>, Jie Zheng<sup>4</sup>, Yashvardhan Jain<sup>1</sup>, Bruce W. Herr II<sup>1</sup>, Katy Börner<sup>1*</sup>
 
-1 Department of Intelligent Systems Engineering, Luddy School of Informatics, Computing, and Engineering, Indiana University, Bloomington, IN, USA
-2 Rose City Data Science, Portland, OR, USA
-3 European Bioinformatics Institute (EMBL-EBI), Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, UK
-4 University of Michigan Medical School, Ann Arbor, MI, USA
+<sup>1</sup> Department of Intelligent Systems Engineering, Luddy School of Informatics, Computing, and Engineering, Indiana University, Bloomington, IN, USA  
+<sup>2</sup> Rose City Data Science, Portland, OR, USA  
+<sup>3</sup> European Bioinformatics Institute (EMBL-EBI), Wellcome Genome Campus, Hinxton, Cambridge CB10 1SD, UK  
+<sup>4</sup> University of Michigan Medical School, Ann Arbor, MI, USA  
 
 ## Abstract
 
