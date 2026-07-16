@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import textwrap
 from collections import Counter, defaultdict, deque
 from datetime import datetime
 from pathlib import Path
@@ -12,52 +11,44 @@ import matplotlib
 matplotlib.rcParams["svg.fonttype"] = "none"
 matplotlib.rcParams["font.family"] = "DejaVu Sans"
 
-ROOT = Path(__file__).resolve().parent
-INPUT = ROOT / "ctann-v7-3.csv"
+INPUT = "ctann-v8-3.csv"
+
 RUN_ID = datetime.now().strftime("%Y%m%d-%H%M%S")
-OUTPUT_DIR = ROOT / "outputs" / "ctaa-v7-curve-spread2x-circle" / RUN_ID
-SVG_OUT = OUTPUT_DIR / "ctaa-v7-curve-spread2x-circle.svg"
-PNG_OUT = OUTPUT_DIR / "ctaa-v7-curve-spread2x-circle.png"
+OUTPUT_DIR = "vis"
+SVG_OUT = OUTPUT_DIR / "ctann-v8-all-sources-martin-blue.svg"
+PNG_OUT = OUTPUT_DIR / "ctann-v8-all-sources-martin-blue.png"
 
-KEEP_SOURCES = {"azimuth", "frmatch", "ribca"}
-
-COMBO_COLORS = {
-    ("azimuth",): "#e53935",
-    ("frmatch",): "#1e88e5",
-    ("ribca",): "#fdd835",
-    ("azimuth", "ribca"): "#fb8c00",
-    ("azimuth", "frmatch"): "#8e24aa",
-    ("frmatch", "ribca"): "#43a047",
-    ("azimuth", "frmatch", "ribca"): "#6d4c41",
-}
-
-
-def normalize_combo(sources: set[str]) -> tuple[str, ...]:
-    return tuple(sorted(sources))
-
-
-def wrap_label(label: str, width: int = 24) -> list[str]:
-    lines = textwrap.wrap(label, width=width, break_long_words=False, break_on_hyphens=False)
-    return lines or [label]
+DEFAULT_NODE_FILL_COLOR = "#7A7B78"
+MARTIN_NODE_FILL_COLOR = "#1E90FF"
 
 
 def main() -> None:
     rows = list(csv.DictReader(INPUT.open(newline="", encoding="utf-8-sig")))
 
     node_sources: dict[str, set[str]] = defaultdict(set)
+
     node_label: dict[str, str] = {}
+
+    # graph structure
     parents: dict[str, set[str]] = defaultdict(set)
     children: dict[str, set[str]] = defaultdict(set)
     edge_counts: Counter[tuple[str, str]] = Counter()
+
+    source_counts: Counter[str] = Counter()
+
     row_count = 0
 
     for row in rows:
-        source = row.get("CT/1 - Sources", "").strip().lower()
-        if source not in KEEP_SOURCES:
-            continue
+        # Include ALL CT/1 - Sources, no filtering
+        source_raw = row.get("CT/1 - Sources", "").strip()
+        source_display = source_raw if source_raw else "(blank)"
+        source_norm = source_display.lower()
+
         row_count += 1
+        source_counts[source_display] += 1
 
         path: list[tuple[str, str]] = []
+
         for idx in range(1, 13):
             node_id = row.get(f"AS/{idx}/ID", "").strip()
             node_lab = row.get(f"AS/{idx}/LABEL", "").strip()
@@ -66,87 +57,164 @@ def main() -> None:
 
         prev_id: str | None = None
         for node_id, node_lab in path:
-            node_sources[node_id].add(source)
+            node_sources[node_id].add(source_norm)
             node_label[node_id] = node_lab
+
             if prev_id and prev_id != node_id:
                 parents[node_id].add(prev_id)
                 children[prev_id].add(node_id)
                 edge_counts[(prev_id, node_id)] += 1
+
             prev_id = node_id
 
     indeg = {node: len(parents[node]) for node in node_sources}
-    queue = deque([node for node, deg in indeg.items() if deg == 0])
-    depth: dict[str, int] = {node: 0 for node in queue}
+    roots = [node for node, deg in indeg.items() if deg == 0]
+
+    if not roots and node_sources:
+        roots = [min(node_sources)]
+
+    # Use shortest root distance so a node stays in the leftmost valid layer.
+    depth: dict[str, int] = {}
+    queue = deque()
+
+    for root in sorted(roots, key=lambda n: (node_label.get(n, ""), n)):
+        depth[root] = 0
+        queue.append(root)
 
     while queue:
         node = queue.popleft()
-        for child in children[node]:
-            indeg[child] -= 1
-            if indeg[child] == 0:
-                depth[child] = max(depth.get(child, 0), depth[node] + 1)
+
+        for child in sorted(
+            children[node],
+            key=lambda c: (
+                -edge_counts[(node, c)],
+                node_label.get(c, ""),
+                c,
+            ),
+        ):
+            candidate = depth[node] + 1
+            if child not in depth or candidate < depth[child]:
+                depth[child] = candidate
                 queue.append(child)
 
-    changed = True
-    while changed:
-        changed = False
-        for node in node_sources:
-            if parents[node]:
-                best = max((depth[p] + 1 for p in parents[node] if p in depth), default=0)
-                if best > depth.get(node, -1):
-                    depth[node] = best
-                    changed = True
+    # Build one primary parent tree for layout so each subtree can fan out cleanly.
+    primary_parent: dict[str, str] = {}
 
-    ordered: list[str] = []
-    seen: set[str] = set()
+    for node in node_sources:
+        if not parents[node]:
+            continue
 
-    def dfs(node: str) -> None:
-        if node in seen:
+        ranked = sorted(
+            parents[node],
+            key=lambda p: (
+                -edge_counts[(p, node)],
+                depth.get(p, 999),
+                node_label.get(p, ""),
+                p,
+            ),
+        )
+        primary_parent[node] = ranked[0]
+
+    primary_children: dict[str, list[str]] = defaultdict(list)
+
+    for child, parent in primary_parent.items():
+        primary_children[parent].append(child)
+
+    for parent in primary_children:
+        primary_children[parent].sort(
+            key=lambda c: (
+                depth.get(c, 999),
+                -len(children[c]),
+                node_label.get(c, ""),
+                c,
+            )
+        )
+
+    # Count leaves so each subtree gets enough vertical room.
+    leaf_weight: dict[str, int] = {}
+
+    def compute_leaf_weight(node: str) -> int:
+        kids = primary_children.get(node, [])
+        if not kids:
+            leaf_weight[node] = 1
+            return 1
+
+        total = sum(compute_leaf_weight(child) for child in kids)
+        leaf_weight[node] = max(1, total)
+        return leaf_weight[node]
+
+    for root in sorted(roots, key=lambda n: (node_label.get(n, ""), n)):
+        compute_leaf_weight(root)
+
+    y_pos: dict[str, float] = {}
+    cursor = 0.0
+    leaf_step = 3.0
+    root_gap = 2.0
+
+    def assign_y(node: str) -> None:
+        nonlocal cursor
+
+        kids = primary_children.get(node, [])
+        if not kids:
+            y_pos[node] = cursor
+            cursor += leaf_step
             return
-        seen.add(node)
-        ordered.append(node)
-        for child in sorted(children[node], key=lambda c: (-edge_counts[(node, c)], node_label.get(c, ""), c)):
-            dfs(child)
 
-    roots = [node for node, deg in indeg.items() if deg == 0]
-    if not roots:
-        roots = [min(node_sources)]
-    for root in sorted(roots, key=lambda n: (depth.get(n, 0), node_label.get(n, ""), n)):
-        dfs(root)
-    for node in node_sources:
-        if node not in seen:
-            dfs(node)
+        for child in kids:
+            assign_y(child)
 
-    layers: dict[int, list[str]] = defaultdict(list)
-    for node in node_sources:
-        layers[depth.get(node, 0)].append(node)
-    for d in layers:
-        layers[d].sort(key=lambda n: (ordered.index(n), node_label.get(n, ""), n))
+        y_pos[node] = sum(y_pos[child] for child in kids) / len(kids)
+
+    ordered_roots = sorted(roots, key=lambda n: (node_label.get(n, ""), n))
+
+    for idx, root in enumerate(ordered_roots):
+        assign_y(root)
+        if idx < len(ordered_roots) - 1:
+            cursor += root_gap
+
+    # Any detached nodes fall back below the main layout.
+    for node in sorted(
+        node_sources,
+        key=lambda n: (
+            depth.get(n, 999),
+            node_label.get(n, ""),
+            n,
+        ),
+    ):
+        if node not in y_pos:
+            y_pos[node] = cursor
+            cursor += leaf_step
 
     max_depth = max(depth.values()) if depth else 0
-    layer_size = max(len(nodes) for nodes in layers.values()) if layers else 1
+    min_y = min(y_pos.values()) if y_pos else 0.0
+    max_y = max(y_pos.values()) if y_pos else 1.0
 
-    left_margin = 50
-    top_margin = 130
-    right_legend_space = 640
-    column_dx = 600
-    row_dy = 96
-    node_d = 28
-    label_gap = 10
-    label_line_height = 11
-    width = left_margin + max_depth * column_dx + 320 + right_legend_space
-    height = top_margin + max(1, layer_size - 1) * row_dy + 180
+    left_margin = 760
+    top_margin = 140
+    right_legend_space = 620
+    column_dx = 292.5
+    row_dy = 8.5
+    node_d = 14
+    label_gap = 2
+
+    width = left_margin + max_depth * column_dx + 360 + right_legend_space
+    layout_height = max(1.0, max_y - min_y) * row_dy
+    height = top_margin + layout_height + 220
+
+    vertical_offset = top_margin + max(
+        0.0,
+        (height - top_margin - 140 - layout_height) / 2,
+    )
 
     positions: dict[str, tuple[float, float]] = {}
-    for depth_level, nodes in layers.items():
-        total_height = (len(nodes) - 1) * row_dy
-        start_y = top_margin + (max(layer_size - 1, len(nodes) - 1) - total_height / row_dy) * 0.5 * row_dy
-        if len(nodes) == layer_size:
-            start_y = top_margin
-        for idx, node in enumerate(nodes):
-            positions[node] = (left_margin + depth_level * column_dx, start_y + idx * row_dy)
+
+    for node in node_sources:
+        x = left_margin + depth.get(node, 0) * column_dx
+        y = vertical_offset + (y_pos[node] - min_y) * row_dy
+        positions[node] = (x, y)
 
     import matplotlib.pyplot as plt
-    from matplotlib.patches import Circle, FancyArrowPatch
+    from matplotlib.patches import Circle
 
     fig = plt.figure(figsize=(width / 120, height / 120), dpi=120)
     ax = fig.add_axes([0, 0, 1, 1])
@@ -154,96 +222,139 @@ def main() -> None:
     ax.set_ylim(height, 0)
     ax.axis("off")
 
+    # Draw edges
     for parent, child in edge_counts:
         if parent not in positions or child not in positions:
             continue
+
         px, py = positions[parent]
         cx, cy = positions[child]
-        start = (px + node_d / 2, py + node_d / 2)
-        end = (cx, cy + node_d / 2)
-        span = max(40.0, abs(end[0] - start[0]))
-        direction = 1 if end[1] >= start[1] else -1
-        rad = min(0.35, 0.08 + span / 2000.0) * direction
-        ax.add_patch(
-            FancyArrowPatch(
-                start,
-                end,
-                arrowstyle="-",
-                connectionstyle=f"arc3,rad={rad}",
-                mutation_scale=10,
-                linewidth=0.9 if edge_counts[(parent, child)] < 5 else 1.25,
-                color="#4a4a4a",
-                alpha=0.42 if edge_counts[(parent, child)] < 5 else 0.62,
-                zorder=1,
-            )
+
+        x1 = px + node_d / 2
+        y1 = py + node_d / 2
+        x2 = cx + node_d / 2
+        y2 = cy + node_d / 2
+
+        is_primary = primary_parent.get(child) == parent
+
+        ax.plot(
+            [x1, x2],
+            [y1, y2],
+            color="#4a4a4a",
+            linewidth=1.0 if is_primary else 0.8,
+            alpha=0.56 if is_primary else 0.22,
+            zorder=1,
         )
 
+    # Draw nodes
     for node, (x, y) in positions.items():
-        fill = COMBO_COLORS.get(normalize_combo(node_sources[node]), "#bdbdbd")
+        if "martin" in node_sources[node]:
+            fill_color = MARTIN_NODE_FILL_COLOR
+        else:
+            fill_color = DEFAULT_NODE_FILL_COLOR
+
         ax.add_patch(
             Circle(
                 (x + node_d / 2, y + node_d / 2),
                 radius=node_d / 2,
-                linewidth=1.0,
-                edgecolor="#202124",
-                facecolor=fill,
+                linewidth=0,
+                edgecolor="none",
+                facecolor=fill_color,
                 zorder=2,
             )
         )
 
         label = node_label.get(node, node)
-        lines = wrap_label(label, width=24)
-        if len(lines) > 4:
-            lines = textwrap.wrap(label, width=22, break_long_words=False, break_on_hyphens=False)[:4]
-        text_y = y + node_d + label_gap
-        for idx, line in enumerate(lines):
-            ax.text(
-                x + node_d / 2,
-                text_y + idx * label_line_height,
-                line,
-                fontsize=8.4,
-                color="#111111",
-                ha="center",
-                va="top",
-                clip_on=True,
-                zorder=3,
-            )
 
-    legend_x = left_margin + max_depth * column_dx + 320 + 42
-    legend_y = 130
-    # ax.text(legend_x, legend_y - 24, "Legend", fontsize=14, fontweight="bold", ha="left", va="top", color="#111111")
+        ax.text(
+            x + node_d / 2,
+            y + node_d + label_gap,
+            label,
+            fontsize=6.8,
+            color="#111111",
+            ha="center",
+            va="top",
+            clip_on=False,
+            zorder=3,
+        )
+
+    # Legend
+    legend_x = 40
+    legend_y = 50
+
+    martin_node_count = sum(1 for sources in node_sources.values() if "martin" in sources)
+    non_martin_node_count = len(node_sources) - martin_node_count
 
     legend_items = [
-        (("azimuth",), "Azimuth only"),
-        (("ribca",), "RIBCA only"),
-        (("frmatch",), "FR-Match only"),
-        (("azimuth", "ribca"), "Azimuth + RIBCA"),
-        (("azimuth", "frmatch"), "Azimuth + FR-Match"),
-        (("frmatch", "ribca"), "RIBCA + FR-Match"),
-        (("azimuth", "frmatch", "ribca"), "Azimuth + RIBCA + FR-Match"),
+        (
+            DEFAULT_NODE_FILL_COLOR,
+            f"All non-Martin nodes ({non_martin_node_count} nodes)",
+        ),
+        (
+            MARTIN_NODE_FILL_COLOR,
+            f'Martin nodes from CT/1 - Sources = "Martin" ({martin_node_count} nodes)',
+        ),
     ]
-    combo_counts = Counter(normalize_combo(v) for v in node_sources.values())
 
     item_y = legend_y
-    for combo, label in legend_items:
-        color = COMBO_COLORS.get(combo, "#bdbdbd")
-        count = combo_counts.get(combo, 0)
+
+    for color, label in legend_items:
         ax.add_patch(
             Circle(
                 (legend_x + 8, item_y - 5),
                 radius=7,
-                linewidth=1.0,
-                edgecolor="#202124",
+                linewidth=0,
+                edgecolor="none",
                 facecolor=color,
             )
         )
-        ax.text(legend_x + 22, item_y - 1, f"{label} ({count} nodes)", fontsize=9.5, ha="left", va="top", color="#222222")
-        item_y += 26
+
+        ax.text(
+            legend_x + 22,
+            item_y - 1,
+            label,
+            fontsize=19,
+            ha="left",
+            va="top",
+            color="#222222",
+        )
+
+        item_y += 28
+
+    item_y += 16
+
+    ax.text(
+        legend_x,
+        item_y,
+        "Included CT/1 - Sources:",
+        fontsize=19,
+        fontweight="bold",
+        ha="left",
+        va="top",
+        color="#222222",
+    )
+
+    item_y += 24
+
+    for source, count in sorted(source_counts.items(), key=lambda x: x[0].lower()):
+        ax.text(
+            legend_x,
+            item_y,
+            f"{source}: {count} rows",
+            fontsize=18,
+            ha="left",
+            va="top",
+            color="#444444",
+        )
+        item_y += 21
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
     fig.savefig(SVG_OUT, format="svg")
-    fig.savefig(PNG_OUT, format="png", dpi=160)
+    fig.savefig(PNG_OUT, format="png", dpi=180)
+
     plt.close(fig)
+
     print(f"Saved {SVG_OUT}")
     print(f"Saved {PNG_OUT}")
 
