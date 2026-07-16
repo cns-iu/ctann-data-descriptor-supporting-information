@@ -13,7 +13,6 @@ matplotlib.rcParams["font.family"] = "DejaVu Sans"
 
 INPUT = "ctann-v8-3.csv"
 
-RUN_ID = datetime.now().strftime("%Y%m%d-%H%M%S")
 OUTPUT_DIR = "vis"
 SVG_OUT = OUTPUT_DIR / "ctann-v8-all-sources-martin-blue.svg"
 PNG_OUT = OUTPUT_DIR / "ctann-v8-all-sources-martin-blue.png"
