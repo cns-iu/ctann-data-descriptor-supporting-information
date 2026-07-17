@@ -1,6 +1,6 @@
 # Constructing, Validating, and Using Human Reference Atlas Cell Type Annotation Crosswalks
 
-Nicole Vasilevsky<sup>1,2*</sup>, Aleix Puig-Barbe<sup>3*</sup>, Andreas Bueckle<sup>1</sup>, Ellen M. Quardokus<sup>1</sup>, Yongxin Kong<sup>1</sup>, Jie Zheng<sup>4</sup>, Yashvardhan Jain<sup>1</sup>, Bruce W. Herr II<sup>1</sup>, Katy Börner<sup>1*</sup>
+Nicole Vasilevsky<sup>1,2*</sup>, Aleix Puig-Barbe<sup>3*</sup>, Andreas Bueckle<sup>1</sup>, Ellen M. Quardokus<sup>1</sup>, Yongxin Kong<sup>1</sup>, Jie Zheng<sup>4</sup>, Oliver He<sup>4</sup>, Yashvardhan Jain<sup>1</sup>, Bruce W. Herr II<sup>1</sup>, Katy Börner<sup>1*</sup>
 
 <sup>1</sup> Department of Intelligent Systems Engineering, Luddy School of Informatics, Computing, and Engineering, Indiana University, Bloomington, IN, USA  
 <sup>2</sup> Rose City Data Science, Portland, OR, USA  
