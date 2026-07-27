@@ -42,22 +42,22 @@ LOCAL_CROSSWALKS = {
 SOURCE_LABELS = {
     "azimuth": "Azimuth",
     "celltypist": "CellTypist",
-    "deepcelltypes": "deepcelltypes",
-    "deepcelltypes_hubmap": "deepcelltypes-HuBMAP",
-    "frmatch": "FRMatch",
+    "deepcelltypes": "DeepCell Types",
+    "deepcelltypes_hubmap": "DeepCell Types-HuBMAP",
+    "frmatch": "FR-Match",
     "pan_human_azimuth": "Pan-human Azimuth",
     "popv": "popV",
     "ribca": "RIBCA",
     "stellar": "STELLAR",
-    "vccf": "VCCF",
+    "vccf": "CDE Spatial Omics",
 }
 
 # Figure / layout settings
 SORT_MODE = "alphabetical"  # or "coverage"
-FIGURE_FONT_SIZE = 7.0
+FIGURE_FONT_SIZE = 10.5
 ROW_SPACING_SCALE = 0.50
 BOTTOM_SPACE_SCALE = 1.65
-FIGURE_WIDTH_MM = 235
+FIGURE_WIDTH_MM = 305.5
 ORIGINAL_FIGURE_HEIGHT_MM = 135
 ORIGINAL_BOTTOM_FRACTION = 0.39
 ORIGINAL_TOP_FRACTION = 0.975
@@ -107,14 +107,12 @@ def main() -> None:
         ignore_index=True,
     )
 
-    # Size metric: unique mapped CL labels per tool-organ combination.
     df_size = (
         df_combined.groupby(["source", "Organ_ID"], as_index=False)["CL_Label"]
         .nunique()
         .rename(columns={"CL_Label": "n_unique_cell_label"})
     )
 
-    # Color metric: exact_match_rate = n_exact_matches / n_mappings.
     mapping_keys = [
         "source",
         "Organ_ID",
@@ -244,7 +242,6 @@ def main() -> None:
     ax.set_ylim(len(tool_order) - 0.4, -0.6)
     ax.grid(False)
 
-    # Show all four spines so the axes form a box.
     for side in ["top", "right", "bottom", "left"]:
         ax.spines[side].set_visible(True)
         ax.spines[side].set_linewidth(0.6)
@@ -252,7 +249,6 @@ def main() -> None:
     ax.tick_params(axis="x", pad=1, labelsize=FIGURE_FONT_SIZE)
     ax.tick_params(axis="y", pad=2, labelsize=FIGURE_FONT_SIZE)
 
-    # Size legend.
     count_values = df_plot["n_unique_cell_label"].astype(float)
     min_count = float(count_values.min())
     max_count = float(count_values.max())
@@ -266,7 +262,6 @@ def main() -> None:
     ]
     legend_labels = [format_legend_value(v) for v in legend_values]
 
-    # Leave a dedicated right-hand column for the two legends.
     fig.subplots_adjust(
         left=0.15,
         right=0.74,
@@ -274,21 +269,19 @@ def main() -> None:
         bottom=bottom_margin_mm / figure_height_mm,
     )
 
-    # Position the colorbar and size legend in a stacked column to the right of the main axes.
     ax_pos = ax.get_position()
     right_col_x = ax_pos.x1 + 0.035
-    cbar_width = min(0.18, 0.98 - right_col_x)
+    cbar_width = min(0.09, 0.98 - right_col_x)
     cbar_height = 0.035
     cbar_y = ax_pos.y0 + 0.64 * ax_pos.height
 
     cbar_ax = fig.add_axes([right_col_x, cbar_y, cbar_width, cbar_height])
     cbar = fig.colorbar(scatter, cax=cbar_ax, orientation="horizontal")
-    ticks = np.linspace(0, 1, 6)
+    ticks = [0.0, 0.5, 1.0]
     cbar.set_ticks(ticks)
     cbar.ax.set_xticklabels([f"{int(v * 100)}%" for v in ticks])
     cbar.ax.set_title("Exact match rate", fontsize=FIGURE_FONT_SIZE, pad=6)
 
-    # Place the size legend below the colorbar but keep it above the x-axis level.
     legend_y = ax_pos.y0 + 0.46 * ax_pos.height
     fig.legend(
         legend_handles,
