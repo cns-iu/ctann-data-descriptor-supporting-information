@@ -1,2 +1,5 @@
 # Virtual environments
 .venv
+
+# Claude Code files
+/.claude
