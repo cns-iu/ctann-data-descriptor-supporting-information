@@ -1,0 +1,11 @@
+CT,CT ID,Hex,color_name,color
+connective tissue cell,CL:0002320,#1f78b4,dark blue,
+endothelial cell,CL:0000115,#e31a1c,dark red,
+epithelial cell,CL:0000066,#ff7f00,dark orange,
+germ line cell,CL:0000039,#6a3d9a,dark purple,
+hematopoietic cell,CL:0000988,#fb9a99,light red,
+mesenchymal cell,CL:0008019,#a6cee3,light blue,
+neural cell,CL:0002319,#33a02c,dark green,
+melanocyte,CL:0000148,#cab2d6,light purple,
+muscle cell,CL:0000187,#afabab,gray,
+precursor cell ,CL:0011115,#b2df8a,light green,
