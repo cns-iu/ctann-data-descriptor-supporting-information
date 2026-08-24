@@ -1,0 +1,11 @@
+Tool,Number of Unique Organ,Number of Unique CL ID,Number of Unique CL Label,Percent Exact Match,Percent Narrow Match,Percent Broad Match
+Azimuth,20,301,482,57.79,42.21,0.0
+CDE Spatial Omics,11,126,189,76.8,20.2,3.0
+CellTypist,16,268,443,57.56,42.44,0.0
+DeepCell Types,1,29,29,100.0,0.0,0.0
+DeepCell Types-HuBMAP,1,40,40,97.56,2.44,0.0
+FR-Match,1,53,61,59.42,37.68,2.9
+Pan-human Azimuth,1,241,440,49.33,50.45,0.22
+popV,24,157,157,99.78,0.22,0.0
+RIBCA,1,15,15,100.0,0.0,0.0
+STELLAR,1,21,25,84.0,16.0,0.0
