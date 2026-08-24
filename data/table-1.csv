@@ -1,0 +1,78 @@
+Tool,Organ,Number of Unique CL ID
+Azimuth,adipose tissue,26
+Azimuth,adrenal gland,12
+Azimuth,blood,41
+Azimuth,bone marrow,43
+Azimuth,brain,8
+Azimuth,eye,16
+Azimuth,heart,33
+Azimuth,intestine,12
+Azimuth,kidney,64
+Azimuth,liver,32
+Azimuth,lung,85
+Azimuth,palatine tonsil,66
+Azimuth,pancreas,22
+Azimuth,placenta,12
+Azimuth,primary motor cortex,19
+Azimuth,skeletal muscle tissue,11
+Azimuth,spleen,9
+Azimuth,stomach,16
+Azimuth,thymus,5
+Azimuth,white adipose tissue,26
+CDE Spatial Omics,bone marrow,42
+CDE Spatial Omics,decidua,20
+CDE Spatial Omics,esophagus,18
+CDE Spatial Omics,intestine,31
+CDE Spatial Omics,lung,26
+CDE Spatial Omics,lymph node,30
+CDE Spatial Omics,oral cavity,34
+CDE Spatial Omics,pancreas,5
+CDE Spatial Omics,skin of body,17
+CDE Spatial Omics,spleen,14
+CDE Spatial Omics,tonsil,47
+CellTypist,blood,22
+CellTypist,bone marrow,38
+CellTypist,heart,50
+CellTypist,hippocampal formation,22
+CellTypist,intestine,39
+CellTypist,islet of Langerhans,4
+CellTypist,kidney,35
+CellTypist,large intestine,87
+CellTypist,liver,35
+CellTypist,lung,73
+CellTypist,lymph node,27
+CellTypist,pancreas,9
+CellTypist,skeletal muscle tissue,19
+CellTypist,skin of body,23
+CellTypist,small intestine,87
+CellTypist,spleen,29
+DeepCell Types,body proper,29
+DeepCell Types-HuBMAP,body proper,40
+FR-Match,lung,53
+Pan-human Azimuth,body proper,241
+RIBCA,body proper,15
+STELLAR,intestine,21
+popV,adipose tissue,12
+popV,blood,20
+popV,blood vasculature,14
+popV,bone marrow,15
+popV,eye,30
+popV,heart,5
+popV,large intestine,18
+popV,liver,12
+popV,lung,40
+popV,lymph node,23
+popV,male reproductive system,13
+popV,mammary gland,14
+popV,mesenteric lymph node,25
+popV,pancreas,14
+popV,prostate gland,13
+popV,respiratory system,36
+popV,skin of body,24
+popV,small intestine,17
+popV,spleen,25
+popV,thymus,23
+popV,tongue,11
+popV,trachea,18
+popV,urinary bladder,15
+popV,uterus,13
